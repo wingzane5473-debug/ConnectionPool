@@ -7,6 +7,11 @@
 # 编译器设置
 CXX = g++
 
+# 目录设置
+SRC_DIR = src
+INCLUDE_DIR = include
+BUILD_DIR = build
+
 # 使用 mysql_config 获取 MySQL 相关参数
 MYSQL_CONFIG := $(shell which mysql_config 2>/dev/null)
 
@@ -19,21 +24,21 @@ else
     MYSQL_LIBS = -L/usr/lib/mysql -lmysqlclient
 endif
 
-CXXFLAGS = -Wall -Wextra -std=c++11 -g -I./include $(MYSQL_CFLAGS)
+
+
+CXXFLAGS = -Wall -Wextra -std=c++11 -g -I./include $(MYSQL_CFLAGS) \
+	-DCONFIG_PATH='"/root/collection_pool/src/mysql.conf"'  #保证每个cpp编译时都能看到config_path的宏定义
 LDFLAGS = $(MYSQL_LIBS)
 TARGET = SQL_test
 
-# 目录设置
-SRC_DIR = src
-INCLUDE_DIR = include
-BUILD_DIR = build
+
 
 # 源文件和目标文件
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 # 默认目标
-all: $(BUILD_DIR) $(TARGET)
+all: $(BUILD_DIR) $(TARGET) 
 
 # 创建构建目录
 $(BUILD_DIR):
