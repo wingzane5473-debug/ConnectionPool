@@ -8,6 +8,7 @@ using namespace std;
 
 int main()
 {
+    /*测试mysql的connection类是否正常*/
     // std::cout << "test" <<std::endl;
     // Connection conn;
     // char sql[1024] = {0};
@@ -16,7 +17,8 @@ int main()
     // conn.connect("127.0.0.1",3306,"test","123456","chat");
     // conn.update(sql);
 
-    ConnectionPool *connpool = ConnectionPool::getConnectionPool();
-    connpool->loadConfigFile();
+    /*测试loadconfigfile功能是否正常*/
+    // ConnectionPool *connpool = ConnectionPool::getConnectionPool();
+    // connpool->loadConfigFile();
     return 0;
 }
