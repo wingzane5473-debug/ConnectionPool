@@ -88,5 +88,6 @@ ConnectionPool::ConnectionPool()
         _connectionQue.push(p);
         _connectionCnt++;
    }
-   //启动一个新线程作为连接的生成者
+   //启动一个新线程作为连接的生成者 linux thread  ==> pthread create
+   thread produce(std::bind(&ConnectionPool::produceConnectionTask,this));
 }

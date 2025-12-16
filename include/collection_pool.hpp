@@ -4,6 +4,8 @@
 #include <mutex>
 #include <atomic>
 #include <thread>
+#include <memory>
+#include <functional>
 using namespace std;
 #include <collection.hpp>
 /*
@@ -14,11 +16,14 @@ class ConnectionPool
     public:
         //获取连接池对象实例
         static ConnectionPool* getConnectionPool(); 
-       //给外部提供接口，从连接池中获取一个可用的空闲连接
-        Connection* getConnection();
+       //给外部提供接口，从连接池中获取一个可用的空闲连接。
+       //通过智能指针，直接释放掉connection，不需要再使用backConnection()函数
+        shared_ptr<Connection> getConnection();
     private:
         ConnectionPool();  //单例设计模式，构造函数私有化
         bool loadConfigFile();  //从conf文件中加载配置项
+        //运行在独立的线程中，专门负责生产新连接
+        void produceConnectionTask();
         //mysql登录相关内容
         string _ip;
         unsigned short _port;
