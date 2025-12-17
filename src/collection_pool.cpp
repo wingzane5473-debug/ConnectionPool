@@ -7,10 +7,7 @@ ConnectionPool* ConnectionPool::getConnectionPool()
     static ConnectionPool pool; //静态对象只初始化一次。自动进行lock与unlock
     return &pool;
 }
-ConnectionPool::ConnectionPool()
-{
 
-}
 bool ConnectionPool::loadConfigFile()
 {
     FILE *pf = fopen(CONFIG_PATH,"r");
@@ -90,4 +87,26 @@ ConnectionPool::ConnectionPool()
    }
    //启动一个新线程作为连接的生成者 linux thread  ==> pthread create
    thread produce(std::bind(&ConnectionPool::produceConnectionTask,this));
+}
+//专门负责生产新连接的线程函数
+void ConnectionPool::produceConnectionTask()
+{
+    for(;;)
+    {
+        unique_lock<mutex> lock(_queueMutex);
+        while(!_connectionQue.empty())
+        {
+            cv.wait(lock);   //队列不空，此时生产线程进入等待状态
+        }
+        //连接数量没有达到上限，继续创建新的连接
+        if(_connectionCnt < _maxSize)
+        {
+            Connection *p = new Connection();
+            p->connect(_ip,_port,_username,_password,_dbname);
+            _connectionQue.push(p);
+            _connectionCnt++;
+        }
+        //通知消费者线程，可以来消费连接了
+        cv.notify_all();
+    }
 }

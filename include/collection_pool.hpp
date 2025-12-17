@@ -6,6 +6,7 @@
 #include <thread>
 #include <memory>
 #include <functional>
+#include <condition_variable>
 using namespace std;
 #include <collection.hpp>
 /*
@@ -39,4 +40,5 @@ class ConnectionPool
         queue<Connection*> _connectionQue; //存储mysql连接的队列
         mutex _queueMutex; //维护连接队列的线程安全互斥锁
         atomic_int _connectionCnt;  //记录连接所创建的connection连接的总数量
+        condition_variable cv; //条件变量，用于生产者和消费者线程之间的通信
     };
