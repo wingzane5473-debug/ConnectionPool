@@ -25,6 +25,9 @@ class ConnectionPool
         bool loadConfigFile();  //从conf文件中加载配置项
         //运行在独立的线程中，专门负责生产新连接
         void produceConnectionTask();
+
+        //扫描超过_maxIdleTime时间的空闲连接，进行连接的回收
+        void scannerConnectionTask();
         //mysql登录相关内容
         string _ip;
         unsigned short _port;

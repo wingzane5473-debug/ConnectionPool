@@ -82,11 +82,17 @@ ConnectionPool::ConnectionPool()
    {
         Connection *p = new Connection();
         p->connect(_ip,_port,_username,_password,_dbname);
+        p->refreshAliveTime(); //刷新一下开始空闲的起始时间
         _connectionQue.push(p);
         _connectionCnt++;
    }
    //启动一个新线程作为连接的生成者 linux thread  ==> pthread create
    thread produce(std::bind(&ConnectionPool::produceConnectionTask,this));
+   produce.detach(); //分离线程
+
+   //启动一个新的定时线程，扫描超过最大空闲时间的连接，进行回收
+   thread scanner(std::bind(&ConnectionPool::scannerConnectionTask,this));
+   scanner.detach();//分离线程
 }
 //专门负责生产新连接的线程函数
 void ConnectionPool::produceConnectionTask()
@@ -104,6 +110,7 @@ void ConnectionPool::produceConnectionTask()
         {
             Connection *p = new Connection();
             p->connect(_ip,_port,_username,_password,_dbname);
+            p->refreshAliveTime(); //刷新一下开始空闲的起始时间
             _connectionQue.push(p);
             _connectionCnt++;
         }
@@ -141,6 +148,7 @@ shared_ptr<Connection> ConnectionPool::getConnection(){
     [&](Connection *pcon)
     {
         unique_lock<mutex> lock(_queueMutex);
+        pcon->refreshAliveTime(); //刷新一下开始空闲的起始时间
         _connectionQue.push(pcon);
 
     });
@@ -153,4 +161,31 @@ shared_ptr<Connection> ConnectionPool::getConnection(){
 
     
     return sp;
+}
+
+void ConnectionPool::scannerConnectionTask()
+{
+    for(;;)
+    {
+        //通过sleep模拟定时效果
+        this_thread::sleep_for(chrono::seconds(_maxIdleTime)); //定时扫描
+        //lock的作用： 保证连接队列的线程安全，此时扫描线程
+        unique_lock<mutex> lock(_queueMutex);
+        while(_connectionCnt > _initSize) //连接数量超过初始连接数量，
+        {
+            Connection *p = _connectionQue.front();
+            //判断连接的空闲时间是否超过了最大空闲时间
+            if(p->getAliveTime() >= (_maxIdleTime*1000)) //clock返回值单位是ms
+            {
+                //删除该连接
+                _connectionQue.pop();
+                _connectionCnt--;
+                delete p;
+            }
+            else
+            {
+                break; //队头的连接没有超过最大空闲时间，后面的连接更不会超过，直接跳出循环
+            }
+        }
+    }
 }
